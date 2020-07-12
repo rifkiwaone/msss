@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:login/Animation/FadeAnimation.dart';
+import 'package:login/main.dart';
+import 'services/api.dart';
 
-class Login extends StatelessWidget {
+class Login extends StatefulWidget {
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  ApiService apiService = ApiService();
+
+  TextEditingController email = TextEditingController();
+  TextEditingController pass = TextEditingController();
+
+  bool proses = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,8 +102,9 @@ class Login extends StatelessWidget {
                                     ),
                                   ),
                                   child: TextField(
+                                    controller: email,
                                     decoration: InputDecoration(
-                                        hintText: "Username",
+                                        hintText: "Email",
                                         hintStyle:
                                             TextStyle(color: Colors.grey),
                                         border: InputBorder.none),
@@ -104,6 +119,7 @@ class Login extends StatelessWidget {
                                     ),
                                   ),
                                   child: TextField(
+                                    controller: pass,
                                     decoration: InputDecoration(
                                         hintText: "Password",
                                         hintStyle:
@@ -160,13 +176,17 @@ class Login extends StatelessWidget {
                               child: FadeAnimation(
                                 1.9,
                                 RaisedButton(
-                                  child: Text(
-                                    "Masuk",
-                                    style: TextStyle(
-                                        fontSize: 20.0,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
-                                  ),
+                                  child: proses
+                                      ? CircularProgressIndicator(
+                                          backgroundColor: Colors.white,
+                                        )
+                                      : Text(
+                                          "Masuk",
+                                          style: TextStyle(
+                                              fontSize: 20.0,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                        ),
                                   color: Colors.blueGrey,
                                   splashColor: Colors.lightBlue,
                                   shape: RoundedRectangleBorder(
@@ -174,7 +194,39 @@ class Login extends StatelessWidget {
                                   ),
                                   padding: const EdgeInsets.all(10.0),
                                   onPressed: () {
-                                    Navigator.pushNamed(context, '/mainPage');
+                                    setState(() {
+                                      proses = true;
+                                    });
+                                    apiService
+                                        .login(email.text, pass.text)
+                                        .then((value) {
+                                      setState(() {
+                                        proses = false;
+                                      });
+                                      if (value["error"]) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text("Opps"),
+                                            content: SingleChildScrollView(
+                                              child: ListBody(
+                                                children: <Widget>[
+                                                  Text(value["message"] +
+                                                      ", periksa data!"),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (ctx) => MyHomePage(
+                                                      token: value["token"],
+                                                    )));
+                                      }
+                                    });
                                   },
                                 ),
                               ),

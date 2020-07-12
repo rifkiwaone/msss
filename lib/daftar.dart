@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:login/Animation/FadeAnimation.dart';
+import 'services/api.dart';
 
-class Daftar extends StatelessWidget {
+class Daftar extends StatefulWidget {
+  @override
+  _DaftarState createState() => _DaftarState();
+}
+
+class _DaftarState extends State<Daftar> {
+  ApiService apiService = ApiService();
+
+  TextEditingController nama = TextEditingController();
+  TextEditingController email = TextEditingController();
+  TextEditingController pass = TextEditingController();
+
+  bool proses = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,8 +102,9 @@ class Daftar extends StatelessWidget {
                                     ),
                                   ),
                                   child: TextField(
+                                    controller: nama,
                                     decoration: InputDecoration(
-                                        hintText: "Username",
+                                        hintText: "Nama",
                                         hintStyle:
                                             TextStyle(color: Colors.grey),
                                         border: InputBorder.none),
@@ -104,6 +119,7 @@ class Daftar extends StatelessWidget {
                                     ),
                                   ),
                                   child: TextField(
+                                    controller: email,
                                     decoration: InputDecoration(
                                         hintText: "Email",
                                         hintStyle:
@@ -120,6 +136,7 @@ class Daftar extends StatelessWidget {
                                     ),
                                   ),
                                   child: TextField(
+                                    controller: pass,
                                     decoration: InputDecoration(
                                         hintText: "Password",
                                         hintStyle:
@@ -144,13 +161,17 @@ class Daftar extends StatelessWidget {
                                 right: 50.0,
                                 top: 10.0,
                                 bottom: 10.0),
-                            child: Text(
-                              "Daftar",
-                              style: TextStyle(
-                                  fontSize: 20.0,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                            child: proses
+                                ? CircularProgressIndicator(
+                                    backgroundColor: Colors.white,
+                                  )
+                                : Text(
+                                    "Daftar",
+                                    style: TextStyle(
+                                        fontSize: 20.0,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
+                                  ),
                           ),
                           color: Colors.blueGrey,
                           splashColor: Colors.lightBlue,
@@ -158,7 +179,35 @@ class Daftar extends StatelessWidget {
                             borderRadius: BorderRadius.circular(50.0),
                           ),
                           onPressed: () {
-                            Navigator.pushNamed(context, '/login');
+                            setState(() {
+                              proses = true;
+                            });
+                            apiService
+                                .register(email.text, pass.text, nama.text)
+                                .then((value) {
+                              setState(() {
+                                proses = false;
+                              });
+                              if (value["error"]) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text("Opps"),
+                                    content: SingleChildScrollView(
+                                      child: ListBody(
+                                        children: <Widget>[
+                                          Text(value["message"] +
+                                              ", periksa data!"),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                Navigator.pushReplacementNamed(
+                                    context, '/login');
+                              }
+                            });
                           },
                         ),
                         SizedBox(
@@ -187,7 +236,8 @@ class Daftar extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(50.0),
                                 ),
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/login');
+                                  Navigator.pushReplacementNamed(
+                                      context, '/login');
                                 },
                               ),
                             ],

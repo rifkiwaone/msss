@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:login/daftar.dart';
 import 'package:login/isi.dart';
 import 'package:login/login.dart';
-import 'package:login/Animation/FadeAnimation.dart';
+import 'package:login/services/api.dart';
+import 'dart:core';
 
 void main() => runApp(MyApp());
 
@@ -13,34 +14,29 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       routes: <String, WidgetBuilder>{
-        '/tambah': (BuildContext context) => new Isi(),
         '/login': (BuildContext context) => new Login(),
         '/daftar': (BuildContext context) => new Daftar(),
-        '/mainPage': (BuildContext context) => new MyApp(),
-        // '/detailPage': (BuildContext context) => new DetailHomePage(),
-        // '/pesanWorkspace': (BuildContext context) => new PesanWorkspace(),
-        // '/editProfile': (BuildContext context) => new EditProfile()
       },
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
-      home: MyHomePage(
-        title: 'Daftar Jadwal',
-      ),
+      home: Login(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key key, this.token}) : super(key: key);
 
-  final String title;
+  final String token;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
+  ApiService apiService = ApiService();
+
   final List<Tab> tabs = <Tab>[
     Tab(
       icon: Icon(Icons.date_range),
@@ -52,9 +48,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   TabController _tabController;
 
+  List jadwal;
+
   @override
   void initState() {
     super.initState();
+    apiService.jadwal(widget.token).then((value) {
+      if (value["error"]) {
+      } else {
+        setState(() {
+          jadwal = value["jadwal"];
+        });
+      }
+    });
     _tabController = TabController(length: tabs.length, vsync: this);
   }
 
@@ -68,12 +74,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text("Daftar Jadwal"),
         backgroundColor: Colors.blueGrey,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: tabs,
-        ),
+        // bottom: TabBar(
+        //   controller: _tabController,
+        //   tabs: tabs,
+        // ),
       ),
       drawer: Drawer(
         child: ListView(
@@ -109,44 +115,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   bottom: BorderSide(color: Colors.grey.shade400),
                 ),
               ),
-              child: new CustomListTile(
-                Icons.assignment_late,
-                'Terlambat',
-                () => {},
-              ),
-            ),
-            SizedBox(
-              height: 10.0,
-            ),
-            new CustomListTile(Icons.help, 'Bantuan', () => {}),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-              child: new CustomListTile(
-                Icons.share,
-                'Bagikan',
-                () => {},
-              ),
-            ),
-            SizedBox(
-              height: 10.0,
-            ),
-            new CustomListTile(Icons.settings, 'Pengaturan', () => {}),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
               child: RaisedButton(
                 child: new CustomListTile(Icons.archive, 'Keluar', () => {}),
                 color: Colors.white,
                 splashColor: Colors.lightBlue,
                 onPressed: () {
-                  Navigator.pushNamed(context, '/login');
+                  Navigator.pushReplacementNamed(context, '/login');
                 },
                 padding: const EdgeInsets.only(left: 1.0),
               ),
@@ -154,33 +128,44 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           ],
         ),
       ),
-      body: TabBarView(
-        children: [
-          Center(
-            child: ListView(
-              children: <Widget>[
-                Container(
-                  margin: EdgeInsets.all(10.0),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.today,
-                      ),
-                      SizedBox(
-                        width: 5.0,
-                      ),
-                      Text(
-                        "Hari Ini",
-                        style: TextStyle(fontSize: 16.0),
-                      )
-                    ],
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            Container(
+              height: 20,
+              margin: EdgeInsets.all(10.0),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.today,
                   ),
-                ),
-                FlatButton(
+                  SizedBox(
+                    width: 5.0,
+                  ),
+                  Text(
+                    "Hari Ini",
+                    style: TextStyle(fontSize: 16.0),
+                  )
+                ],
+              ),
+            ),
+            Container(
+              height: MediaQuery.of(context).size.height - 120,
+              child: ListView.builder(
+                itemCount: jadwal.length,
+                itemBuilder: (context, index) => FlatButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/tambah');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => Isi(
+                          token: widget.token,
+                        ),
+                      ),
+                    );
                   },
                   child: Container(
+                    margin: EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: Colors.blueGrey[100],
                       borderRadius: BorderRadius.circular(10),
@@ -192,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
                             Text(
-                              "Pertemuan 1",
+                              jadwal[index]["nama"],
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 16.0,
@@ -215,7 +200,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                               width: 5.0,
                             ),
                             Text(
-                              "07/15/2020",
+                              jadwal[index]["waktu"].substring(0, 10),
                               style: TextStyle(color: Colors.black),
                             ),
                             SizedBox(
@@ -226,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                               width: 5.0,
                             ),
                             Text(
-                              "06.20",
+                              jadwal[index]["waktu"].substring(11, 16),
                               style: TextStyle(color: Colors.black),
                             ),
                             SizedBox(
@@ -241,9 +226,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                               style: TextStyle(color: Colors.black),
                             ),
                             Icon(Icons.alarm, color: Colors.black),
-                            SizedBox(
-                              width: 30.0,
-                            ),
                             Icon(
                               Icons.star,
                               color: Colors.black,
@@ -254,16 +236,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          Text('DATA'),
-        ],
-        controller: _tabController,
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/tambah');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => Isi(
+                token: widget.token,
+              ),
+            ),
+          );
         },
         tooltip: 'Tekan',
         child: Icon(Icons.add),
@@ -273,6 +260,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 }
 
+// ignore: must_be_immutable
 class CustomListTile extends StatelessWidget {
   IconData icon;
   String text;
